@@ -1,0 +1,6 @@
+diffusers==0.6.0
+ftfy
+Pillow
+python-telegram-bot==13.14
+requests
+transformers
