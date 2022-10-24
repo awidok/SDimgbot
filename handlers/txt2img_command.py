@@ -26,6 +26,7 @@ def txt2img_command(update, context):
 
     guidance_scale, text = extract_parameter(text, "scale", float, 7.5)
     num_inference_steps, text = extract_parameter(text, "steps", int, 100)
+    as_file, text = extract_parameter(text, "as_file", bool, False)
 
 
     image = context.bot_data["pipe"].text2img(
@@ -33,8 +34,10 @@ def txt2img_command(update, context):
         num_inference_steps=num_inference_steps,
         generator=generator,
         guidance_scale=guidance_scale).images[0]
-
-    update.message.reply_photo(image_to_bytes(image), "{} (Seed: {})".format(text, seed))
+    if as_file:
+        update.message.reply_document(image_to_bytes(image), "{} (Seed: {})".format(text, seed))
+    else:
+        update.message.reply_photo(image_to_bytes(image), "{} (Seed: {})".format(text, seed))
 
 
 def add_handler(dp):
