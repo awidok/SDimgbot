@@ -2,6 +2,7 @@ from telegram.ext import CommandHandler
 import random
 import torch
 from io import BytesIO
+from lib.text_utils import extract_parameter
 
 
 def image_to_bytes(image):
@@ -19,13 +20,19 @@ def txt2img_command(update, context):
     if text == "/txt2img":
         return
 
-        
-    seed = random.randint(1, 10000)
+
+    seed, text = extract_parameter(text, "seed", int, random.randint(1, 10000))
     generator = torch.cuda.manual_seed_all(seed)
+
+    guidance_scale, text = extract_parameter(text, "scale", float, 7.5)
+    num_inference_steps, text = extract_parameter(text, "steps", int, 100)
+
+
     image = context.bot_data["pipe"].text2img(
         prompt=text,
-        num_inference_steps=100,
-        generator=generator).images[0]
+        num_inference_steps=num_inference_steps,
+        generator=generator,
+        guidance_scale=guidance_scale).images[0]
 
     update.message.reply_photo(image_to_bytes(image), "{} (Seed: {})".format(text, seed))
 
