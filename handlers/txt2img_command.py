@@ -3,15 +3,7 @@ import random
 import torch
 from io import BytesIO
 from lib.text_utils import extract_parameter
-
-
-def image_to_bytes(image):
-    bio = BytesIO()
-    bio.name = 'image.png'
-    image.save(bio, 'png')
-    bio.seek(0)
-    return bio
-
+from lib.image_utils import image_to_bytes
 
 def txt2img_command(update, context):
     text = update.message.text
@@ -20,12 +12,13 @@ def txt2img_command(update, context):
     if text == "/txt2img":
         return
 
-
     seed, text = extract_parameter(text, "seed", int, random.randint(1, 10000))
     generator = torch.cuda.manual_seed_all(seed)
 
     guidance_scale, text = extract_parameter(text, "scale", float, 7.5)
     num_inference_steps, text = extract_parameter(text, "steps", int, 100)
+    num_inference_steps = min(num_inference_steps, 300)
+    num_inference_steps = max(num_inference_steps, 1)
     as_file, text = extract_parameter(text, "as_file", bool, False)
 
 
@@ -35,7 +28,7 @@ def txt2img_command(update, context):
         generator=generator,
         guidance_scale=guidance_scale).images[0]
     if as_file:
-        update.message.reply_document(image_to_bytes(image), "{} (Seed: {})".format(text, seed))
+        update.message.reply_document(image_to_bytes(image), "image.png")
     else:
         update.message.reply_photo(image_to_bytes(image), "{} (Seed: {})".format(text, seed))
 

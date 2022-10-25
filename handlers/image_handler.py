@@ -1,37 +1,47 @@
 from telegram.ext import MessageHandler, Filters
 from io import BytesIO
 from PIL import Image
+import numpy as np
+from lib.text_utils import extract_parameter
+from lib.image_utils import image_to_bytes
+import random
+import torch
 
-def img2img(update, context, file_):
+def get_img(file):
     bytes_io = BytesIO()
-
-    file_.download(out=bytes_io)
-
+    file.download(out=bytes_io)
     image = Image.open(bytes_io)
-    image.thumbnail((512, 512))
+    return image
 
-    if image.size[0] < 512:
-        new_image = Image.new('RGBA', (512, image.size[1]), color=(255,255,255,0))
-        new_image.paste(image, (0, 0, image.size[0], image.size[1]))
-        image = new_image
 
-    stream = BytesIO()
-    image.save(stream, format='WEBP')
-    out_stream = BytesIO(stream.getvalue())
-    bot.send_document(update.message.chat.id, out_stream, timeout=30)
-
-    stream = BytesIO()
-    image.save(stream, format='PNG')
-    out_stream = BytesIO(stream.getvalue())
-    bot.send_document(update.message.chat.id, out_stream, timeout=30)
-
-def img2img_command(update, context):
-    text = update.message.text
+def img2img(update, context, file):
+    text = update.message.caption
+    if not text.startswith("/img2img"):
+        return
     if ' ' in text:
         text = text[text.find(' ') + 1:]
-    if text == "/txt2img":
-        return
-    update.message.reply("pong")
+    if text == "/img2img":
+        text = ""
+
+    seed, text = extract_parameter(text, "seed", int, random.randint(1, 10000))
+    generator = torch.cuda.manual_seed_all(seed)
+
+    strength, text = extract_parameter(text, "strength", float, 0.8)
+    as_file, text = extract_parameter(text, "as_file", bool, False)
+    steps, text = extract_parameter(text, "steps", int, 50)
+    steps = min(steps, 300)
+    steps = max(steps, 1)
+
+    image = context.bot_data["pipe"].img2img(
+        prompt=text,
+        init_image=get_img(file),
+        num_inference_steps=steps,
+        generator=generator,
+        strength=strength).images[0]
+    if as_file:
+        update.message.reply_document(image_to_bytes(image), "image.png")
+    else:
+        update.message.reply_photo(image_to_bytes(image), "{} (Seed: {})".format(text, seed))
 
 
 # reply to an image
