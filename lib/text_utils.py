@@ -10,3 +10,10 @@ def extract_parameter(text, name, type, default=None):
             return default, text
     else:
         return default, text
+
+
+def split_prompts(text):
+    result = text.split("--neg--")
+    if len(result) < 2:
+        return text, ""
+    return result[0], result[1]

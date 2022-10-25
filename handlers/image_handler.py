@@ -2,7 +2,7 @@ from telegram.ext import MessageHandler, Filters
 from io import BytesIO
 from PIL import Image
 import numpy as np
-from lib.text_utils import extract_parameter
+from lib.text_utils import extract_parameter, split_prompts
 from lib.image_utils import image_to_bytes
 import random
 import torch
@@ -32,8 +32,11 @@ def img2img(update, context, file):
     steps = min(steps, 300)
     steps = max(steps, 1)
 
+    prompt, negative_prompt = split_prompts(text)
+
     image = context.bot_data["pipe"].img2img(
-        prompt=text,
+        prompt=prompt,
+        negative_prompt=negative_prompt,
         init_image=get_img(file),
         num_inference_steps=steps,
         generator=generator,

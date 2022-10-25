@@ -1,8 +1,7 @@
 from telegram.ext import CommandHandler
 import random
 import torch
-from io import BytesIO
-from lib.text_utils import extract_parameter
+from lib.text_utils import extract_parameter, split_prompts
 from lib.image_utils import image_to_bytes
 
 def txt2img_command(update, context):
@@ -20,10 +19,11 @@ def txt2img_command(update, context):
     num_inference_steps = min(num_inference_steps, 300)
     num_inference_steps = max(num_inference_steps, 1)
     as_file, text = extract_parameter(text, "as_file", bool, False)
-
+    prompt, negative_prompt = split_prompts(text)
 
     image = context.bot_data["pipe"].text2img(
-        prompt=text,
+        prompt=prompt,
+        negative_prompt=negative_prompt,
         num_inference_steps=num_inference_steps,
         generator=generator,
         guidance_scale=guidance_scale).images[0]
