@@ -3,4 +3,5 @@ ftfy
 Pillow
 python-telegram-bot==13.14
 requests
+torch
 transformers
